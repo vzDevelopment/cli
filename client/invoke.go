@@ -42,7 +42,7 @@ type callID struct {
 	Error  apiErr `json:"error"`
 }
 
-func Invoke(provider provider.Provider, invokeUrl string, content io.Reader, output io.Writer, method string, env []string, contentType string, includeCallID bool) error {
+func Invoke(provider provider.Provider, invokeUrl string, content io.Reader, output io.Writer, method string, env []string, contentType, invokeType string, includeCallID bool) error {
 
 	method = "POST"
 
@@ -68,6 +68,12 @@ func Invoke(provider provider.Provider, invokeUrl string, content io.Reader, out
 		req.Header.Set("Content-Type", contentType)
 	} else {
 		req.Header.Set("Content-Type", "text/plain")
+	}
+
+	if invokeType != "" {
+		req.Header.Set("Fn-Invoke-Type", invokeType)
+	} else {
+		req.Header.Set("Fn-Invoke-Type", "sync")
 	}
 
 	if len(env) > 0 {

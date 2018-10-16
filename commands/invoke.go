@@ -35,6 +35,10 @@ var InvokeFnFlags = []cli.Flag{
 		Name:  "display-call-id",
 		Usage: "whether display call ID or not",
 	},
+	cli.StringFlag{
+		Name:  "invoke-type",
+		Usage: "The Invoke-Type for the function invocation.",
+	},
 }
 
 // InvokeCommand returns call cli.command
@@ -62,7 +66,7 @@ func InvokeCommand() cli.Command {
 }
 
 func (cl *invokeCmd) Invoke(c *cli.Context) error {
-	var contentType string
+	var contentType, invokeType string
 
 	appName := c.Args().Get(0)
 	fnName := c.Args().Get(1)
@@ -88,10 +92,14 @@ func (cl *invokeCmd) Invoke(c *cli.Context) error {
 		}
 	}
 
+	if c.String("invoke-type") != "" {
+		invokeType = c.String("invoke-type")
+	}
+
 	invokeURL := fn.Annotations[FnInvokeEndpointAnnotation]
 	if invokeURL == nil {
 		return fmt.Errorf("Fn invoke url annotation not present, %s", FnInvokeEndpointAnnotation)
 	}
 
-	return client.Invoke(cl.provider, invokeURL.(string), content, os.Stdout, c.String("method"), c.StringSlice("e"), contentType, c.Bool("display-call-id"))
+	return client.Invoke(cl.provider, invokeURL.(string), content, os.Stdout, c.String("method"), c.StringSlice("e"), contentType, invokeType, c.Bool("display-call-id"))
 }
