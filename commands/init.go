@@ -33,6 +33,8 @@ import (
 	"github.com/fnproject/cli/common"
 	"github.com/fnproject/cli/langs"
 	function "github.com/fnproject/cli/objects/fn"
+	"github.com/fnproject/cli/utils/strutils"
+	"github.com/fnproject/fn/api/models"
 	modelsV2 "github.com/fnproject/fn_go/modelsv2"
 	"github.com/urfave/cli"
 )
@@ -199,11 +201,16 @@ func (a *initFnCmd) init(c *cli.Context) error {
 			return fmt.Errorf("Init does not support the trigger type '%s'.\n Permitted values are 'http'.", a.triggerType)
 		}
 
+		triggerName := generateTriggerName(a.ff.Name)
+		if err := validateTriggerName(triggerName); err != nil {
+			return err
+		}
+
 		trig := make([]common.Trigger, 1)
 		trig[0] = common.Trigger{
-			Name:   a.ff.Name + "-trigger",
+			Name:   triggerName,
 			Type:   a.triggerType,
-			Source: "/" + a.ff.Name + "-trigger",
+			Source: "/" + triggerName,
 		}
 
 		a.ff.Triggers = trig
@@ -392,12 +399,20 @@ func (a *initFnCmd) bindFn(fn *modelsV2.Fn) {
 // ValidateFuncName checks if the func name is valid, the name can't contain a colon and
 // must be all lowercase
 func ValidateFuncName(name string) error {
+	fn := models.Fn{Name: name}
+
+	if err := fn.ValidateName(); err != nil {
+		return err
+	}
+
 	if strings.Contains(name, ":") {
 		return errors.New("Function name cannot contain a colon")
 	}
+
 	if strings.ToLower(name) != name {
 		return errors.New("Function name must be lowercase")
 	}
+
 	return nil
 }
 
@@ -517,4 +532,17 @@ func validateTriggerType(triggerType string) bool {
 	default:
 		return false
 	}
+}
+
+func generateTriggerName(baseName string) string {
+	suffix := "-trigger"
+
+	// Truncate the baseName to ensure there is enough space for the suffix
+	maxBaseLength := models.MaxTriggerName - len(suffix)
+	return strutils.TruncateString(baseName, maxBaseLength) + suffix
+}
+
+func validateTriggerName(triggerName string) error {
+	trigger := models.Trigger{Name: triggerName}
+	return trigger.ValidateName()
 }
